@@ -1,0 +1,262 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="bean.userMapper">
+
+	<!-- 测试分页 -->
+	<select id="selectUserByPage" parameterType="model.Page" resultType="User">
+		<![CDATA[select u.* from user u where u.age > #{params.age}]]>
+	</select>
+
+	<!-- 
+		一级缓存：session，当flush或close之后，该session中的所有cache就将clear
+		二级缓存：Mapper(namespace)，可自定义存储源，如：ehcache
+		
+		当某一个作用域（一级缓存/二级缓存）进行了C/U/D之后，默认该作用域下所有select中的cache将被clear
+	-->
+	<!-- 一级缓存，默认开启 -->
+	<select id="selectUserByCacheOne" parameterType="int" resultType="User">
+		select u.* from user u where u.id = #{id}
+	</select>
+	
+	
+	<!-- 
+		a、默认不开启二级缓存，开启缓存<cache  eviction="FIFO" flushInterval="60000" size="512" readOnly="true"/>  
+	        1、eviction:缓存策略 eviction = LRU、FIFO、SOFT、WEAK(默认LRU)  
+	            1）LRU：最近最少使用的：移除最长时间不被使用的对象  
+	            2）FIFO：先进先出：按对象进入缓存的顺序来移除它们。  
+	            3）SOFT：软引用：移除基于垃圾回收器状态和软引用规则的对象。  
+	            4）WEAK：弱引用：更积极地移除基于垃圾收集器状态和弱引用规则的对象。  
+	        2、flushInterval：刷新间隔 ）可以被设置为任意的正整数，而且它们代表一个合理的毫秒形式的时间段。  
+	        				     默认情况是不设置，也就是没有刷新间隔，缓存仅仅调用语句时刷新。  
+	        3、size：引用数目 可以被设置为任意正整数，要记住你缓存的对象数目和你运行环境的可用内存资源数目。默认值是1024。  
+	        4、readOnly：属性可以被设置为true或false。只读的缓存会给所有调用者返回缓存对象的相同实例。因此这些对象不能被修改。  
+	        			  这提供了很重要的性能优势。可读写的缓存会返回缓存对象的拷贝（通过序列化）。这会慢一些，但是安全，因此默认是false。  
+                     
+        b、使用自定义缓存  
+	        <cache type=”com.domain.something.MyCustomCache”>  
+	            <property name=”cacheFile” value=”/tmp/my-custom-cache.tmp”/>  
+	        </cache>  
+        c、type属性指定的类必须实现org.mybatis.cache.Cache接口  
+       	 
+       	d、引用另外的缓存<cache-ref namespace=”com.someone.application.data.SomeMapper”/>  
+    --> 
+    
+	<!-- 
+		readOnly = false:表示结果集对象需要被序列化 
+		第一个可以输出日志,第二个不输出日志
+	-->
+	<!-- <cache readOnly="true" type="org.mybatis.caches.ehcache.EhcacheCache" /> -->
+	
+	<!-- <cache type="org.mybatis.caches.ehcache.LoggingEhcache"/> -->
+	
+	<!-- mybatis-oscache缓存 -->
+	<!-- <cache type="org.mybatis.caches.oscache.OSCache"/> -->
+	<!-- 登录缓存操作 -->
+	<!-- <cache type="org.mybatis.caches.oscache.LoggingOSCache"/> -->
+	
+	<!-- mybatis-memcached集中式缓存，可用于分布式缓存 -->
+	<cache type="org.mybatis.caches.memcached.MemcachedCache" />
+	<cache type="org.mybatis.caches.memcached.LoggingMemcachedCache" />
+	<select id="selectUserByCacheTwo" parameterType="int" resultType="User" >
+		select u.* from user u where u.id = #{id}
+	</select>
+	
+
+	<!-- 存储过程查询 -->
+	<!-- <select id="selectCountByProcedure" parameterMap="selectCountByProcedureMap" statementType="CALLABLE">
+		call get_user_count(?,?)
+	</select>
+	<parameterMap type="java.util.Map" id="selectCountByProcedureMap">
+		<parameter property="sex" mode="IN" jdbcType="INTEGER"/>
+		<parameter property="count" mode="OUT" jdbcType="INTEGER"/>
+	</parameterMap> -->
+
+
+	<!-- 多条件查询(使用查询方式，如：where/if/choose，查询，会将参数转成map形式) -->
+<!-- 	<select id="getUsers" parameterType="po.UserCondition" resultType="User">
+		select u.* from user u where 
+		<if test='name != "%null%"'>
+			u.name like #{name} and
+		</if>
+		u.age between #{minAge} and #{maxAge}
+	</select> -->
+	<!-- <parameterMap type="po.UserCondition" id="getUsers">
+	</parameterMap>
+	<select id="getUsers" parameterMap="getUsers" resultType="User">
+		select u.* from user u 
+		若存在过滤条件时，自动添加where字段
+		<where>
+			自动判断where之后有无条件，若无条件，自动去掉and/or字段 (即自动消除无用的and/or)
+			<if test='name != null'>
+				and u.name like #{name}
+			</if>
+			<if test="minAge != -1">
+				and u.age >= #{minAge}
+			</if>
+			<if test="maxAge != -1">
+				<![CDATA[xxx]]> 针对xxx内容，不进行xml解析
+				<![CDATA[and u.age <= #{maxAge}]]>
+			</if>
+		</where>
+	</select> -->
+	
+	<update id="updateUser2" parameterType="User">
+		update user u
+		<set>
+			<!-- 自动消除无用的， -->
+			<if test="name != null">
+				u.name = #{name},
+			</if>
+			<if test="age != null and age != ''">
+				u.age = #{age},
+			</if>
+		</set>
+		where u.id = #{id}
+	</update>
+	
+	<!-- <select id="selectUsers" resultType="User">
+		select * from user
+	 	<where>
+	 		只能选择一种情况，相当于自带break的switch
+	 		<choose>
+	 			<when test='name != null'>
+					and name like #{name}
+	 			</when>
+	 			<when test="age != -1">
+	 				and age >= #{age}
+	 			</when>
+	 			map测试
+	 			<otherwise>
+	 				and id in
+	 				
+		 				item:循环体中的具体对象。支持属性的点路径访问，如item.age,item.info.details【注意：在list和数组中是其中的对象，在map中是value】
+		 				index:在list和数组中,index是元素的序号，在map中，index是元素的key
+		 				open:该语句以什么开始
+		 				separator:在每次进行迭代之间以什么符号作为分隔符
+		 				close:以什么结束
+		 				collection:集合用list,数组用array,map用对应的key
+	 				
+	 				<foreach item="id" index="index" collection="ids" open="(" separator="," close=")" >
+						#{id}
+					</foreach>
+	 			</otherwise>
+	 		</choose>
+	 	</where>
+	</select> -->
+	
+	<!-- 集合测试 -->
+	<!-- <select id="selectUsers2" resultType="User">
+		select * from user
+	 	<where>
+			and id in
+			<foreach item="user" index="index" collection="list" open="(" separator="," close=")">
+				#{user.id}
+			</foreach>
+	 	</where>
+	</select> -->
+	
+	<!-- 数组测试 -->
+	<!-- <select id="selectUsers3" resultType="User">
+		select * from user
+	 	<where>
+			and id in
+			<foreach item="item" index="index" collection="array" open="(" separator="," close=")">
+				#{item}
+			</foreach>
+	 	</where>
+	</select> -->
+	
+	<!-- map测试 -->
+	<!-- <select id="selectUsers4" resultType="User">
+		select * from user
+	 	<where>
+			and id in
+			<foreach item="item" index="index" collection="ids" open="(" separator="," close=")">
+				#{item}
+			</foreach>
+	 	</where>
+	</select> -->
+	
+	<!-- or查询 select * from user where name like 'xx' or name like 'xx' -->
+	<!-- <select id="selectUsers5" resultType="User">
+		select * from user
+	 	<where>
+			<foreach item="name" index="index" collection="list" open="" separator="or" close="">
+				name like #{name}
+			</foreach>
+	 	</where>
+	</select> -->
+	
+	<!-- or查询 select * from user where name = 'xxx' and age = xx -->
+	<!-- <select id="selectUsers6" resultType="User">
+        select * from user 
+        <where>
+	        <foreach item="value" index="key" collection="map" open="" separator="AND" close="">
+	        	${key} = #{value}
+	        </foreach>
+        </where>
+    </select> -->
+	
+	<!-- <insert id="addUsers">
+        insert into user (name, age) values
+        <foreach item="user" index="index" collection="list" open="" separator="," close="">
+        	(#{user.name}, #{user.age})
+        </foreach>
+    </insert> -->
+
+	<!-- 实体类别名设置 -->
+	<!-- <insert id="addUser" parameterType="User">
+		insert into user(name,age) values(#{name},#{age})
+	</insert>
+
+	<delete id="deleteUser" parameterType="int">
+		delete from user where id = #{id}
+	</delete>
+
+	<update id="updateUser" parameterType="User">
+		update user set name = #{name},age = #{age} where id = #{id}
+	</update>
+
+	<select id="getUser" parameterType="int" resultType="User">
+		select * from user where id = #{id}
+	</select>
+
+	<select id="getAllUsers" resultType="User">
+		select * from user
+	</select> -->
+
+	<!-- insert 元素：  
+        1）useGeneratedKeys：这会告诉MyBatis使用JDBC的getGeneratedKeys方法来取出由数据  
+        					（比如：像MySQL和SQL Server这样的数据库管理系统的自动递增字段）内部生成的主键。默认值：false。  
+        2）keyProperty：标记一个属性（自动生成的那个属性，比如主键id），MyBatis会通过getGeneratedKeys或者通过insert语句的selectKey子元素设置它的值。
+        				默认：不设置。       
+    --> 
+	<insert id="addUser" parameterType="bean.User">
+		<!--    
+        selectKey ：在插入数据前先执行selectKey语句，将返回的值作为keyProperty属性值插入  
+            1)order:这可以被设置为BEFORE或AFTER。如果设置为BEFORE，那么它会首先选择主键，设置keyProperty然后执行插入语句。  
+           			 如果设置为AFTER，那么先执行插入语句，然后是selectKey元素-这和如Oracle数据库相似，可以在插入语句中嵌入序列调用。     
+            2)statementType:和前面的相同，MyBatis支持STATEMENT，PREPARED和CALLABLE语句的映射类型，分别代表PreparedStatement和CallableStatement类型。   
+        -->  
+        <!-- <selectKey keyProperty="id" resultType="int" order="BEFORE" statementType="PREPARED">  
+            SELECT FLOOR(1 + (RAND() * 1000000));   
+        </selectKey> -->  
+		insert into user(name,age) values(#{name},#{age})
+	</insert>
+
+	<!-- <delete id="deleteUser" parameterType="int">
+		delete from user where id = #{id}
+	</delete>
+
+	<update id="updateUser" parameterType="bean.User">
+		update user set name = #{name},age = #{age} where id = #{id}
+	</update>
+
+	<select id="getUser" parameterType="int" resultType="bean.User">
+		select * from user where id = #{id}
+	</select>
+
+	<select id="getAllUsers" resultType="bean.User">
+		select * from user
+	</select> -->
+</mapper>
