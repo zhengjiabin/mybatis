@@ -20,7 +20,6 @@
             5)collection:复杂类型的集  
             6)discriminator:使用结果值来决定使用哪个结果映射  
                 a)case:基于某些值的结果映射  
-            ---------------------------------------------------   
         
         1、resultMap下 id、result 元素:  
             1)property:映射到列结果的字段或属性  
@@ -96,11 +95,24 @@
 		select c.* from class c
 	</select>
 	
-	<resultMap type="Class" id="getAllClassMap">
+	<!-- 方式一 -->
+	<!-- <resultMap type="Class" id="getAllClassMap">
 		<id property="id" column="id" />
 		<result property="name" column="name" />
 
-		<!-- 处理一对多关联表 -->
+		处理一对多关联表
+		<collection property="students" column="id" select="bean.studentMapper.getStudentByClass">
+			<id property="id" column="id"/>
+			<result property="name" column="name"/>
+		</collection>
+	</resultMap> -->
+	
+	<!-- 方式二 -->
+	<resultMap type="Class" id="classStudentsMap">
+		<id property="id" column="id" />
+		<result property="name" column="name" />
+	</resultMap>
+	<resultMap type="Class" id="getAllClassMap" extends="classStudentsMap">
 		<collection property="students" column="id" select="bean.studentMapper.getStudentByClass">
 			<id property="id" column="id"/>
 			<result property="name" column="name"/>
